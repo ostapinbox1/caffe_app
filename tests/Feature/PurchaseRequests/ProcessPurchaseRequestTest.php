@@ -2,14 +2,10 @@
 
 use App\Actions\PurchaseRequests\CreatePurchaseRequest;
 use App\Enums\RequestStatus;
-use App\Filament\Resources\PurchaseRequests\Pages\EditPurchaseRequest;
-use App\Filament\Resources\PurchaseRequests\Pages\ViewPurchaseRequest;
-use App\Filament\Widgets\RequestsOverview;
 use App\Models\PurchaseRequest;
 use App\Models\User;
 use App\Notifications\PurchaseRequestCancelled;
 use App\Notifications\PurchaseRequestUpdated;
-use Filament\Notifications\Livewire\DatabaseNotifications;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -93,7 +89,7 @@ test('staff pages render', function () {
 
     $this->get(route('dashboard'))->assertOk()->assertSee('Мои открытые заявки')->assertSee('№1 · Кухня');
     $this->get(route('requests.index'))->assertOk()->assertSee('Мука 2 кг');
-    $this->get(route('requests.index', ['tab' => 'closed']))->assertOk()->assertSee('Заявок нет');
+    $this->get(route('requests.index', ['mine' => 1]))->assertOk()->assertSee('Мука 2 кг');
     $this->get(route('requests.create'))->assertOk()->assertSee('Кухня');
     $this->get(route('notifications'))->assertOk();
 });
@@ -115,49 +111,50 @@ test('opening a notification marks it read and leads to the request', function (
     expect($k->staff->unreadNotifications()->count())->toBe(0);
 });
 
-test('admin panel is for managers only', function () {
-    $k = kitchen();
-    $request = newRequest($k);
-
-    $this->actingAs($k->staff)->get('/admin')->assertForbidden();
-
-    $this->actingAs($k->manager);
-    $this->get('/admin')->assertOk();
-    Livewire::test(RequestsOverview::class)->assertSee('Новые заявки');
-    Livewire::test(DatabaseNotifications::class)->assertSee('Новая заявка №1 · Кухня');
-    $this->get('/admin/purchase-requests')->assertOk()->assertSee('Мука 2 кг');
-    $this->get("/admin/purchase-requests/{$request->id}")->assertOk()->assertSee('Анна Бариста');
-    $this->get("/admin/purchase-requests/{$request->id}/edit")->assertOk();
-    $this->get('/admin/catalog-items')->assertOk()->assertSee('Молоко');
-    $this->get('/admin/catalog-categories')->assertOk();
-    $this->get('/admin/request-sections')->assertOk();
-    $this->get('/admin/users')->assertOk()->assertSee('Анна Бариста');
-});
-
-test('manager handles a request in the admin panel', function () {
+test('manager processes a request right in the cabinet', function () {
     $k = kitchen();
     $request = newRequest($k);
     $this->actingAs($k->manager);
 
-    Livewire::test(ViewPurchaseRequest::class, ['record' => $request->getRouteKey()])
-        ->callAction('accept');
-    expect($request->refresh()->status)->toBe(RequestStatus::Accepted);
-
-    Livewire::test(EditPurchaseRequest::class, ['record' => $request->getRouteKey()])
-        ->fillForm(['status' => RequestStatus::Ordered->value, 'manager_comment' => 'Заказал у поставщика'])
-        ->call('save')
-        ->assertHasNoFormErrors();
+    Livewire::test('pages::requests.show', ['purchaseRequest' => $request])
+        ->assertSee('Обработка')
+        ->call('advance')
+        ->assertSee('Принята')
+        ->set('status', RequestStatus::Ordered->value)
+        ->set('managerComment', 'Заказал у поставщика')
+        ->set('expectedAt', now()->addDay()->toDateString())
+        ->call('saveAnswer')
+        ->assertHasNoErrors();
 
     $request->refresh();
     expect($request->status)->toBe(RequestStatus::Ordered)
         ->and($request->manager_comment)->toBe('Заказал у поставщика')
+        ->and($request->expected_at->isTomorrow())->toBeTrue()
         ->and($k->staff->notifications()->count())->toBe(2);
 });
 
-test('manager of another cafe cannot open the request in the admin panel', function () {
+test('staff cannot process requests', function () {
     $k = kitchen();
-    $other = kitchen();
     $request = newRequest($k);
+    $this->actingAs($k->staff);
 
-    $this->actingAs($other->manager)->get("/admin/purchase-requests/{$request->id}")->assertNotFound();
+    Livewire::test('pages::requests.show', ['purchaseRequest' => $request])
+        ->assertDontSee('Обработка')
+        ->call('advance')
+        ->assertForbidden();
+
+    expect($request->refresh()->status)->toBe(RequestStatus::New);
+});
+
+test('requests board groups requests by stage', function () {
+    $k = kitchen();
+    $accepted = newRequest($k);
+    $accepted->updateByManager($k->manager, ['status' => RequestStatus::Accepted]);
+    newRequest($k);
+    $this->actingAs($k->staff);
+
+    $board = Livewire::test('pages::requests.index')->instance()->board;
+
+    expect($board->get('new'))->toHaveCount(1)
+        ->and($board->get('accepted'))->toHaveCount(1);
 });

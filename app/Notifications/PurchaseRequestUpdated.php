@@ -25,4 +25,9 @@ class PurchaseRequestUpdated extends PurchaseRequestNotification
     {
         return implode("\n", $this->changes);
     }
+
+    protected function color(): string
+    {
+        return $this->purchaseRequest->status->badgeColor();
+    }
 }

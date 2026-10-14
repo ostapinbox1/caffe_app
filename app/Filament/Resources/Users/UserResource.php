@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 class UserResource extends Resource
 {
@@ -32,7 +33,9 @@ class UserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Люди';
 
     public static function form(Schema $schema): Schema
     {
@@ -52,7 +55,7 @@ class UserResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('cafe_id', Auth::user()?->cafe_id);
+        return parent::getEloquentQuery()->with('position')->where('cafe_id', Auth::user()?->cafe_id);
     }
 
     // Людей не удаляем — отключаем доступ: на них ссылаются заявки.

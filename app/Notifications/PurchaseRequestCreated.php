@@ -18,4 +18,9 @@ class PurchaseRequestCreated extends PurchaseRequestNotification
 
         return $request->author->shortName().': '.$request->summary();
     }
+
+    protected function color(): string
+    {
+        return $this->purchaseRequest->is_urgent ? 'red' : 'sky';
+    }
 }

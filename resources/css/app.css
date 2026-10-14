@@ -64,3 +64,16 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Tailwind 4 не ставит руку на кнопках — возвращаем: так понятнее, что элемент нажимается. */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+summary,
+label[for],
+a[href] {
+    cursor: pointer;
+}
+
+[x-cloak] {
+    display: none !important;
+}

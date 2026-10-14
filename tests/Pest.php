@@ -66,7 +66,7 @@ function kitchen(): object
         'section' => $section,
         'flour' => CatalogItem::factory()->create(['catalog_category_id' => $category->id, 'name' => 'Мука', 'unit' => Unit::Kilogram]),
         'milk' => CatalogItem::factory()->create(['catalog_category_id' => $category->id, 'name' => 'Молоко', 'unit' => Unit::Liter]),
-        'staff' => User::factory()->create(['cafe_id' => $cafe->id, 'name' => 'Анна Бариста']),
-        'manager' => User::factory()->manager()->create(['cafe_id' => $cafe->id, 'name' => 'Володя Управляющий']),
+        'staff' => User::factory()->create(['cafe_id' => $cafe->id, 'first_name' => 'Анна', 'last_name' => 'Бариста']),
+        'manager' => User::factory()->manager()->create(['cafe_id' => $cafe->id, 'first_name' => 'Володя', 'last_name' => 'Управляющий']),
     ];
 }

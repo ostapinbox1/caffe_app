@@ -28,10 +28,10 @@ class UserFactory extends Factory
     {
         return [
             'cafe_id' => Cafe::factory(),
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'role' => UserRole::Staff,
-            'position' => null,
             'is_active' => true,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -44,7 +44,7 @@ class UserFactory extends Factory
 
     public function manager(): static
     {
-        return $this->state(fn (array $attributes) => ['role' => UserRole::Manager, 'position' => 'Управляющий']);
+        return $this->state(fn (array $attributes) => ['role' => UserRole::Manager]);
     }
 
     public function owner(): static

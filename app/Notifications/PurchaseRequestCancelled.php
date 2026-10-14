@@ -15,4 +15,9 @@ class PurchaseRequestCancelled extends PurchaseRequestNotification
 
         return $request->author->shortName().': '.$request->summary();
     }
+
+    protected function color(): string
+    {
+        return 'zinc';
+    }
 }

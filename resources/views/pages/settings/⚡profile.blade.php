@@ -1,112 +1,107 @@
 <?php
 
-use App\Concerns\ProfileValidationRules;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Avatar;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
-new #[Title('Profile settings')] class extends Component {
-    use ProfileValidationRules;
+new #[Title('Профиль')] class extends Component {
+    use WithFileUploads;
 
-    public string $name = '';
-    public string $email = '';
+    public string $lastName = '';
 
-    /**
-     * Mount the component.
-     */
+    public string $firstName = '';
+
+    public string $middleName = '';
+
+    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    public $avatar = null;
+
     public function mount(): void
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $user = Auth::user();
+        $this->lastName = (string) $user->last_name;
+        $this->firstName = (string) ($user->first_name ?? $user->name);
+        $this->middleName = (string) $user->middle_name;
     }
 
     /**
-     * Update the profile information for the currently authenticated user.
+     * Имя меняет сам сотрудник; логин и роль — только управляющий.
      */
     public function updateProfileInformation(): void
     {
-        $user = Auth::user();
+        $validated = $this->validate([
+            'lastName' => ['nullable', 'string', 'max:100'],
+            'firstName' => ['required', 'string', 'max:100'],
+            'middleName' => ['nullable', 'string', 'max:100'],
+        ], attributes: ['lastName' => 'фамилия', 'firstName' => 'имя', 'middleName' => 'отчество']);
 
-        $validated = $this->validate($this->profileRules($user->id));
+        Auth::user()->update([
+            'last_name' => trim($validated['lastName']) ?: null,
+            'first_name' => trim($validated['firstName']),
+            'middle_name' => trim($validated['middleName']) ?: null,
+        ]);
 
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        Flux::toast(variant: 'success', text: 'Профиль сохранён.');
     }
 
     /**
-     * Send an email verification notification to the current user.
+     * Фото выбрано — сразу сохраняем.
      */
-    public function resendVerificationNotification(): void
+    public function updatedAvatar(): void
     {
-        $user = Auth::user();
+        $this->validate(['avatar' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:8192']], [
+            'avatar.image' => 'Нужна картинка: JPG, PNG или WebP.',
+            'avatar.mimes' => 'Нужна картинка: JPG, PNG или WebP.',
+            'avatar.max' => 'Файл больше 8 МБ.',
+        ]);
 
-        if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
+        Avatar::store($this->avatar, Auth::user());
+        $this->avatar = null;
 
-            return;
-        }
-
-        $user->sendEmailVerificationNotification();
-
-        Session::flash('status', 'verification-link-sent');
+        Flux::toast(variant: 'success', text: 'Фото обновлено.');
     }
 
-    #[Computed]
-    public function hasUnverifiedEmail(): bool
+    public function removeAvatar(): void
     {
-        return Auth::user() instanceof MustVerifyEmail && ! Auth::user()->hasVerifiedEmail();
+        Avatar::remove(Auth::user());
     }
 }; ?>
 
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
+    <x-pages::settings.layout heading="Профиль" subheading="Как вас видят коллеги">
+        <div class="my-6 flex items-center gap-4">
+            <flux:avatar size="xl" :name="auth()->user()->name" :initials="auth()->user()->initials()" :src="auth()->user()->avatarUrl()" />
+            <div class="flex flex-col gap-2">
+                <label class="inline-flex">
+                    <input type="file" wire:model="avatar" accept="image/jpeg,image/png,image/webp" class="sr-only">
+                    <span class="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium shadow-xs hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800">
+                        <span wire:loading.remove wire:target="avatar">{{ auth()->user()->avatar_path ? 'Сменить фото' : 'Загрузить фото' }}</span>
+                        <span wire:loading wire:target="avatar">Загружаем…</span>
+                    </span>
+                </label>
+                @if (auth()->user()->avatar_path)
+                    <flux:button size="xs" variant="ghost" wire:click="removeAvatar">Убрать фото</flux:button>
+                @endif
+                @error('avatar') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+            </div>
+        </div>
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
-        <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+        <form wire:submit="updateProfileInformation" class="flex w-full flex-col gap-5">
+            <flux:input wire:model="lastName" label="Фамилия" autocomplete="family-name" />
+            <flux:input wire:model="firstName" label="Имя" required autocomplete="given-name" />
+            <flux:input wire:model="middleName" label="Отчество" autocomplete="additional-name" />
+
+            <flux:input :value="auth()->user()->email" label="Логин" readonly disabled
+                        description="Логин и должность меняет управляющий." />
+            <flux:input :value="auth()->user()->position?->name ?? '—'" label="Должность" readonly disabled />
 
             <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
-
-                @if ($this->hasUnverifiedEmail)
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
-
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
-
-                        @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
-                                {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
-                        @endif
-                    </div>
-                @endif
-            </div>
-
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
-
+                <flux:button variant="primary" type="submit" data-test="update-profile-button">Сохранить</flux:button>
             </div>
         </form>
     </x-pages::settings.layout>

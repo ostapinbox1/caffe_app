@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property string $name
+ * @property string|null $address
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'address'])]
 class Cafe extends Model
 {
     /** @use HasFactory<CafeFactory> */

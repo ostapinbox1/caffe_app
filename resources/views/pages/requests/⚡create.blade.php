@@ -231,6 +231,24 @@ new #[Title('Новая заявка')] class extends Component {
         $this->redirectRoute('requests.show', ['purchaseRequest' => $request], navigate: true);
     }
 
+    /**
+     * Где позиция справочника лежит в заявке: [id позиции => номер строки].
+     *
+     * @return array<int, int>
+     */
+    public function cartIndex(): array
+    {
+        $index = [];
+
+        foreach ($this->lines as $i => $line) {
+            if ($line['catalog_item_id'] !== null) {
+                $index[$line['catalog_item_id']] ??= $i;
+            }
+        }
+
+        return $index;
+    }
+
     private function step(int $index, int $direction): void
     {
         if (! isset($this->lines[$index])) {
@@ -250,99 +268,93 @@ new #[Title('Новая заявка')] class extends Component {
     }
 }; ?>
 
-<div class="mx-auto flex w-full max-w-2xl flex-col gap-5 pb-24">
+
+@php($cart = $this->cartIndex())
+<div class="mx-auto flex w-full max-w-2xl flex-col gap-4">
+    <div>
+        <flux:link :href="route('requests.index')" wire:navigate class="text-sm">← Все заявки</flux:link>
+    </div>
     <flux:heading size="xl">Новая заявка</flux:heading>
 
     @if (! $this->section)
         <flux:text>Что заказываем?</flux:text>
-        <div class="grid gap-3">
+        <div class="grid gap-3 sm:grid-cols-3">
             @foreach ($this->sections as $item)
-                <flux:button wire:click="chooseSection({{ $item->id }})" class="h-16 text-lg">
+                <button type="button" wire:click="chooseSection({{ $item->id }})"
+                        class="flex h-20 items-center justify-center rounded-xl border border-zinc-200 bg-white text-lg font-semibold shadow-xs transition hover:border-accent hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
                     {{ $item->name }}
-                </flux:button>
+                </button>
             @endforeach
         </div>
     @else
         <div class="flex items-center justify-between gap-2">
-            <flux:heading size="lg">{{ $this->section->name }}</flux:heading>
+            <flux:badge color="emerald" size="lg">{{ $this->section->name }}</flux:badge>
             <flux:button size="sm" variant="ghost" wire:click="changeSection"
                          :wire:confirm="$lines ? 'Сменить раздел? Набранные позиции пропадут.' : null">
                 Сменить раздел
             </flux:button>
         </div>
 
-        {{-- Набранные позиции --}}
-        @if ($lines)
-            <section class="flex flex-col gap-2 rounded-lg border border-accent/40 p-3">
-                <flux:heading>В заявке: {{ count($lines) }}</flux:heading>
-                @foreach ($lines as $index => $line)
-                    <div wire:key="line-{{ $index }}-{{ $line['catalog_item_id'] ?? $line['name'] }}" class="flex flex-col gap-2 border-b border-zinc-200 pb-2 last:border-0 dark:border-zinc-700">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="font-medium">{{ $line['name'] }}</div>
-                            <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeLine({{ $index }})" aria-label="Убрать" />
-                        </div>
-                        @if ($line['catalog_item_id'] && isset($this->alreadyOrdered[$line['catalog_item_id']]))
-                            <div class="text-xs text-amber-700 dark:text-amber-400">Уже заказано — {{ $this->alreadyOrdered[$line['catalog_item_id']] }}</div>
-                        @endif
-                        <div class="flex items-center gap-2">
-                            <flux:button size="sm" icon="minus" wire:click="decrement({{ $index }})" aria-label="Меньше" class="min-w-10" />
-                            <input type="text" inputmode="decimal" wire:model.blur="lines.{{ $index }}.quantity"
-                                   class="h-10 w-20 rounded-lg border border-zinc-300 bg-white text-center dark:border-zinc-600 dark:bg-zinc-900"
-                                   aria-label="Количество" />
-                            <flux:button size="sm" icon="plus" wire:click="increment({{ $index }})" aria-label="Больше" class="min-w-10" />
-                            <select wire:model.live="lines.{{ $index }}.unit" aria-label="Единица"
-                                    class="h-10 rounded-lg border border-zinc-300 bg-white px-2 dark:border-zinc-600 dark:bg-zinc-900">
-                                @foreach (\App\Enums\Unit::options() as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        @error("lines.{$index}.quantity") <div class="text-sm text-red-600">{{ $message }}</div> @enderror
-                    </div>
-                @endforeach
-            </section>
-        @endif
+        {{-- Поиск: заметный и всегда сверху при прокрутке --}}
+        <div class="sticky top-14 z-10 -mx-4 bg-zinc-50/95 px-4 py-2 backdrop-blur lg:top-0 dark:bg-zinc-900/95">
+            <label class="flex items-center gap-2 rounded-xl border-2 border-zinc-300 bg-white px-3 shadow-xs focus-within:border-accent dark:border-zinc-600 dark:bg-zinc-800">
+                <flux:icon.magnifying-glass class="size-5 shrink-0 text-zinc-400" />
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Найти: молоко, мука, сливки…"
+                       class="h-12 w-full bg-transparent text-base outline-none placeholder:text-zinc-400" aria-label="Поиск по справочнику">
+            </label>
+        </div>
 
-        {{-- Справочник --}}
+        {{-- Справочник: категория остаётся открытой, пока её не закроют --}}
         <section class="flex flex-col gap-2">
-            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Найти позицию" clearable />
-
             @forelse ($this->categories as $category)
-                <details wire:key="category-{{ $category->id }}" @if ($search !== '') open @endif
-                         class="rounded-lg border border-zinc-200 dark:border-zinc-700">
-                    <summary class="cursor-pointer select-none p-3 font-medium">
-                        {{ $category->name }} <span class="text-sm text-zinc-500">({{ $category->items->count() }})</span>
-                    </summary>
-                    <div class="flex flex-col">
+                <div x-data="{ open: false }" wire:key="category-{{ $category->id }}"
+                     class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
+                    <button type="button" @click="open = ! open" class="flex w-full items-center justify-between gap-2 p-3 text-start font-medium">
+                        <span>
+                            {{ $category->name }}
+                            <span class="text-sm font-normal text-zinc-500">{{ $category->items->count() }}</span>
+                            @php($picked = $category->items->filter(fn ($item) => isset($cart[$item->id]))->count())
+                            @if ($picked)
+                                <flux:badge size="sm" color="emerald" class="ms-1">в заявке: {{ $picked }}</flux:badge>
+                            @endif
+                        </span>
+                        <flux:icon.chevron-down class="size-5 text-zinc-400 transition" x-bind:class="(open || $wire.search.trim() !== '') && 'rotate-180'" />
+                    </button>
+                    <div x-show="open || $wire.search.trim() !== ''" x-cloak>
                         @foreach ($category->items as $item)
-                            @php($inCart = collect($lines)->firstWhere('catalog_item_id', $item->id))
-                            <button type="button" wire:key="item-{{ $item->id }}" wire:click="addItem({{ $item->id }})"
-                                    class="flex min-h-11 items-center justify-between gap-2 border-t border-zinc-100 px-3 py-2 text-start hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-700/40 {{ $inCart ? 'bg-accent/5' : '' }}">
-                                <span>
-                                    {{ $item->name }} <span class="text-sm text-zinc-500">{{ $item->unit->getLabel() }}</span>
+                            @php($index = $cart[$item->id] ?? null)
+                            <div wire:key="item-{{ $item->id }}"
+                                 class="flex min-h-12 items-center justify-between gap-2 border-t border-zinc-100 px-3 py-1.5 dark:border-zinc-700 {{ $index !== null ? 'bg-emerald-50 dark:bg-emerald-950/40' : '' }}">
+                                <button type="button" wire:click="addItem({{ $item->id }})" class="min-w-0 flex-1 py-1 text-start">
+                                    <span class="{{ $index !== null ? 'font-medium' : '' }}">{{ $item->name }}</span>
+                                    <span class="text-sm text-zinc-500">{{ $item->unit->getLabel() }}</span>
                                     @isset($this->alreadyOrdered[$item->id])
                                         <span class="block text-xs text-amber-700 dark:text-amber-400">уже заказано — {{ $this->alreadyOrdered[$item->id] }}</span>
                                     @endisset
-                                </span>
-                                @if ($inCart)
-                                    <span class="shrink-0 text-sm font-semibold text-accent-content">
-                                        {{ \App\Models\PurchaseRequestItem::formatQuantity((float) $inCart['quantity']) }} {{ \App\Enums\Unit::from($inCart['unit'])->getLabel() }}
-                                    </span>
+                                </button>
+                                @if ($index !== null)
+                                    <div class="flex shrink-0 items-center gap-1">
+                                        <flux:button size="sm" icon="minus" wire:click="decrement({{ $index }})" aria-label="Меньше" />
+                                        <span class="min-w-14 text-center text-sm font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">
+                                            {{ \App\Models\PurchaseRequestItem::formatQuantity((float) $lines[$index]['quantity']) }} {{ \App\Enums\Unit::from($lines[$index]['unit'])->getLabel() }}
+                                        </span>
+                                        <flux:button size="sm" icon="plus" wire:click="increment({{ $index }})" aria-label="Больше" />
+                                    </div>
                                 @else
-                                    <flux:icon.plus class="size-5 shrink-0 text-zinc-400" />
+                                    <flux:button size="sm" variant="filled" icon="plus" wire:click="addItem({{ $item->id }})" aria-label="Добавить {{ $item->name }}" />
                                 @endif
-                            </button>
+                            </div>
                         @endforeach
                     </div>
-                </details>
+                </div>
             @empty
                 <flux:text>{{ $search !== '' ? 'Ничего не нашлось — добавьте свою позицию ниже.' : 'В справочнике раздела пока пусто — добавьте свою позицию ниже.' }}</flux:text>
             @endforelse
         </section>
 
         {{-- Своя позиция --}}
-        <section class="flex flex-col gap-2">
-            <flux:heading>Нет в списке?</flux:heading>
+        <x-card class="flex flex-col gap-2">
+            <flux:heading>Нет в списке? Добавьте своё</flux:heading>
             <div class="flex gap-2">
                 <flux:input wire:model="customName" placeholder="Что нужно" class="flex-1" wire:keydown.enter="addCustom" />
                 <select wire:model="customUnit" aria-label="Единица"
@@ -354,25 +366,57 @@ new #[Title('Новая заявка')] class extends Component {
                 <flux:button wire:click="addCustom" icon="plus" aria-label="Добавить" />
             </div>
             @error('customName') <div class="text-sm text-red-600">{{ $message }}</div> @enderror
-        </section>
+        </x-card>
+
+        {{-- Итог заявки --}}
+        @if ($lines)
+            <x-card class="flex flex-col gap-2 border-accent/40">
+                <flux:heading>Ваша заявка: {{ count($lines) }} {{ trans_choice('позиция|позиции|позиций', count($lines)) }}</flux:heading>
+                @foreach ($lines as $index => $line)
+                    <div wire:key="line-{{ $index }}-{{ $line['catalog_item_id'] ?? $line['name'] }}" class="flex flex-col gap-2 border-b border-zinc-100 pb-2 last:border-0 dark:border-zinc-700">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="font-medium">{{ $line['name'] }}</div>
+                            <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="removeLine({{ $index }})" aria-label="Убрать" />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <flux:button size="sm" icon="minus" wire:click="decrement({{ $index }})" aria-label="Меньше" />
+                            <input type="text" inputmode="decimal" wire:model.blur="lines.{{ $index }}.quantity"
+                                   class="h-10 w-20 rounded-lg border border-zinc-300 bg-white text-center dark:border-zinc-600 dark:bg-zinc-900"
+                                   aria-label="Количество" />
+                            <flux:button size="sm" icon="plus" wire:click="increment({{ $index }})" aria-label="Больше" />
+                            <select wire:model.live="lines.{{ $index }}.unit" aria-label="Единица"
+                                    class="h-10 rounded-lg border border-zinc-300 bg-white px-2 dark:border-zinc-600 dark:bg-zinc-900">
+                                @foreach (\App\Enums\Unit::options() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @error("lines.{$index}.quantity") <div class="text-sm text-red-600">{{ $message }}</div> @enderror
+                    </div>
+                @endforeach
+            </x-card>
+        @endif
 
         {{-- Подробности --}}
-        <section class="flex flex-col gap-4">
+        <x-card class="flex flex-col gap-4">
             <flux:input type="date" wire:model="neededBy" label="Нужно к (необязательно)" min="{{ now()->toDateString() }}" />
             <flux:switch wire:model="isUrgent" label="Срочно" />
             <flux:textarea wire:model="comment" label="Комментарий (необязательно)" rows="2" />
-        </section>
+        </x-card>
 
         @error('lines')
             <flux:callout variant="danger" icon="exclamation-triangle">{{ $message }}</flux:callout>
         @enderror
 
-        <div class="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-3 backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0 dark:border-zinc-700 dark:bg-zinc-800/95">
-            <div class="mx-auto max-w-2xl">
-                <flux:button variant="primary" wire:click="submit" class="h-12 w-full" :disabled="! $lines">
-                    Отправить заявку @if ($lines) ({{ count($lines) }}) @endif
-                </flux:button>
-            </div>
+        {{-- Кнопка отправки всегда на виду (на телефоне — над нижними вкладками) --}}
+        <div class="sticky bottom-20 z-10 lg:bottom-4">
+            <flux:button variant="primary" wire:click="submit" class="h-12 w-full shadow-lg" :disabled="! $lines">
+                @if ($lines)
+                    Отправить заявку · {{ count($lines) }} {{ trans_choice('позиция|позиции|позиций', count($lines)) }}
+                @else
+                    Выберите позиции
+                @endif
+            </flux:button>
         </div>
     @endif
 </div>

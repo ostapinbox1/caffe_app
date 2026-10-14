@@ -7,6 +7,7 @@ use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 
@@ -16,40 +17,54 @@ class UserForm
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->label('Имя и фамилия')
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('position')
-                    ->label('Должность')
-                    ->placeholder('Бариста, повар…')
-                    ->maxLength(100),
-                TextInput::make('email')
-                    ->label('Логин (почта)')
-                    ->email()
-                    ->required()
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                TextInput::make('password')
-                    ->label('Пароль')
-                    ->password()
-                    ->revealable()
-                    ->minLength(8)
-                    ->required(fn (string $operation): bool => $operation === 'create')
-                    ->dehydrated(fn (?string $state): bool => filled($state))
-                    ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Оставьте пустым, чтобы не менять.' : null),
-                Select::make('role')
-                    ->label('Роль')
-                    ->options(fn (): array => self::roleOptions())
-                    ->default(UserRole::Staff->value)
-                    ->required()
-                    // Себе роль не меняем — чтобы случайно не потерять доступ к админке.
-                    ->disabled(fn (?User $record): bool => $record?->is(Auth::user()) ?? false),
-                Toggle::make('is_active')
-                    ->label('Доступ включён')
-                    ->helperText('Выключите, когда человек уволился: войти он больше не сможет, его заявки останутся.')
-                    ->default(true)
-                    ->disabled(fn (?User $record): bool => $record?->is(Auth::user()) ?? false),
+                Section::make('Человек')
+                    ->columns(3)
+                    ->schema([
+                        TextInput::make('last_name')->label('Фамилия')->maxLength(100),
+                        TextInput::make('first_name')->label('Имя')->required()->maxLength(100),
+                        TextInput::make('middle_name')->label('Отчество')->maxLength(100),
+                        Select::make('position_id')
+                            ->label('Должность')
+                            ->relationship('position', 'name', fn ($query) => $query->orderBy('sort'))
+                            ->helperText('От должности зависят чек-листы на смену.')
+                            ->preload()
+                            ->createOptionForm([
+                                TextInput::make('name')->label('Название')->required()->maxLength(100),
+                            ]),
+                    ]),
+                Section::make('Вход и права')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('email')
+                            ->label('Логин (почта)')
+                            ->email()
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
+                        // Только при создании; потом — кнопкой «Сменить пароль».
+                        // new-password — чтобы браузер не подставлял сюда сохранённый пароль.
+                        TextInput::make('password')
+                            ->label('Пароль')
+                            ->password()
+                            ->revealable()
+                            ->autocomplete('new-password')
+                            ->minLength(8)
+                            ->required()
+                            ->visibleOn('create'),
+                        Select::make('role')
+                            ->label('Роль')
+                            ->options(fn (): array => self::roleOptions())
+                            ->default(UserRole::Staff->value)
+                            ->required()
+                            ->helperText('Управляющий обрабатывает заявки, видит смены и чек-листы всех и заходит в настройки.')
+                            // Себе роль не меняем — чтобы случайно не потерять доступ к настройкам.
+                            ->disabled(fn (?User $record): bool => $record?->is(Auth::user()) ?? false),
+                        Toggle::make('is_active')
+                            ->label('Доступ включён')
+                            ->helperText('Выключите, когда человек уволился: войти он больше не сможет, его заявки останутся.')
+                            ->default(true)
+                            ->disabled(fn (?User $record): bool => $record?->is(Auth::user()) ?? false),
+                    ]),
             ]);
     }
 
