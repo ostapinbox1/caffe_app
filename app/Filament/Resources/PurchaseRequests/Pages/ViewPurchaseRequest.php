@@ -15,6 +15,11 @@ class ViewPurchaseRequest extends ViewRecord
 {
     protected static string $resource = PurchaseRequestResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->getRecord()->title();
+    }
+
     protected function getHeaderActions(): array
     {
         return [

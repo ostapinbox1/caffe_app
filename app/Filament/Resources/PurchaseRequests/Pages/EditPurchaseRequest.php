@@ -13,6 +13,11 @@ class EditPurchaseRequest extends EditRecord
 {
     protected static string $resource = PurchaseRequestResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->getRecord()->title().': обработка';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

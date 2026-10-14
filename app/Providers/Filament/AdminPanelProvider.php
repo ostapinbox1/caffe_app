@@ -34,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->brandName('Кофейня · управление')
             ->colors([
-                'primary' => Color::hex('#1F5E4A'),
+                'primary' => Color::generateV3Palette('#1F5E4A'),
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')

@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
+use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestEvent;
 use App\Models\PurchaseRequestItem;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -41,29 +40,23 @@ class PurchaseRequestInfolist
                 Section::make('Состав')
                     ->columnSpan(2)
                     ->schema([
-                        RepeatableEntry::make('items')
+                        TextEntry::make('items')
                             ->hiddenLabel()
-                            ->table([
-                                TableColumn::make('Позиция'),
-                                TableColumn::make('Количество'),
-                            ])
-                            ->schema([
-                                TextEntry::make('name'),
-                                TextEntry::make('quantity')
-                                    ->state(fn (PurchaseRequestItem $record): string => $record->formattedQuantity().' '.$record->unit->getLabel()),
-                            ]),
+                            ->state(fn (PurchaseRequest $record): array => $record->items
+                                ->map(fn (PurchaseRequestItem $item): string => $item->label())
+                                ->all())
+                            ->listWithLineBreaks()
+                            ->bulleted(),
                     ]),
                 Section::make('История')
                     ->columnSpan(1)
                     ->schema([
-                        RepeatableEntry::make('events')
+                        TextEntry::make('events')
                             ->hiddenLabel()
-                            ->schema([
-                                TextEntry::make('description')
-                                    ->hiddenLabel()
-                                    ->state(fn (PurchaseRequestEvent $record): string => $record->description())
-                                    ->helperText(fn (PurchaseRequestEvent $record): string => $record->created_at->format('d.m.Y H:i').' · '.($record->user?->name ?? '—')),
-                            ]),
+                            ->state(fn (PurchaseRequest $record): array => $record->events
+                                ->map(fn (PurchaseRequestEvent $event): string => $event->created_at->format('d.m H:i').' — '.$event->description().' ('.($event->user?->shortName() ?? '—').')')
+                                ->all())
+                            ->listWithLineBreaks(),
                     ]),
             ]);
     }
