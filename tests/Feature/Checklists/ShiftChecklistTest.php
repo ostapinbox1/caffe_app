@@ -65,7 +65,8 @@ test('starting a shift hands out checklists of the position', function () {
         ->and($runs[0]->due_at->format('H:i'))->toBe('10:00')
         ->and($runs[0]->items)->toHaveCount(2)
         ->and($runs[1]->due_at)->toBeNull()
-        ->and($runs[1]->items->pluck('section')->all())->toBe(['Оборудование', 'Финал']);
+        ->and($runs[1]->items->pluck('section')->all())->toBe(['Оборудование', 'Финал'])
+        ->and($runs[0]->items->pluck('sort')->all())->toBe([1, 2]);
 });
 
 test('late shift start gives an hour for a timed checklist', function () {

@@ -52,15 +52,15 @@ class StartShift
                     'due_at' => $template->dueAtFor($shift->started_at),
                 ]);
 
-                $sort = 0;
-                $run->items()->createMany($template->sections->flatMap(
-                    fn (ChecklistTemplateSection $section) => $section->items->map(fn (ChecklistTemplateItem $item) => [
+                $run->items()->createMany($template->sections
+                    ->flatMap(fn (ChecklistTemplateSection $section) => $section->items->map(fn (ChecklistTemplateItem $item) => [
                         'section' => $section->title,
                         'text' => $item->text,
                         'hint' => $item->hint,
-                        'sort' => ++$sort,
-                    ])
-                )->all());
+                    ]))
+                    ->values()
+                    ->map(fn (array $item, int $index) => $item + ['sort' => $index + 1])
+                    ->all());
             }
 
             return $shift;
