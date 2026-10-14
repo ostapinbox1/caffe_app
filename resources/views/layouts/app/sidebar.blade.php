@@ -69,9 +69,7 @@
             </div>
         </flux:header>
 
-        <flux:main class="pb-28 lg:pb-8">
-            {{ $slot }}
-        </flux:main>
+        {{ $slot }}
 
         {{-- Телефон: нижние вкладки --}}
         <nav class="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
