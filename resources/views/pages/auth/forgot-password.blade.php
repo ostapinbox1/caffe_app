@@ -15,7 +15,7 @@
                 type="email"
                 required
                 autofocus
-                placeholder="email@example.com"
+                placeholder="логин@cafe.aviaflot.ru"
             />
 
             <flux:button variant="primary" type="submit" class="w-full" data-test="email-password-reset-link-button">
