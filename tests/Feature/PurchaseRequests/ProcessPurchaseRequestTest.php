@@ -9,6 +9,7 @@ use App\Models\PurchaseRequest;
 use App\Models\User;
 use App\Notifications\PurchaseRequestCancelled;
 use App\Notifications\PurchaseRequestUpdated;
+use Filament\Notifications\Livewire\DatabaseNotifications;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -123,6 +124,7 @@ test('admin panel is for managers only', function () {
     $this->actingAs($k->manager);
     $this->get('/admin')->assertOk();
     Livewire::test(RequestsOverview::class)->assertSee('Новые заявки');
+    Livewire::test(DatabaseNotifications::class)->assertSee('Новая заявка №1 · Кухня');
     $this->get('/admin/purchase-requests')->assertOk()->assertSee('Мука 2 кг');
     $this->get("/admin/purchase-requests/{$request->id}")->assertOk()->assertSee('Анна Бариста');
     $this->get("/admin/purchase-requests/{$request->id}/edit")->assertOk();
