@@ -167,7 +167,8 @@ class ChecklistTemplateResource extends Resource
                     ->placeholder('—'),
                 TextColumn::make('users_count')
                     ->label('Лично')
-                    ->counts('users'),
+                    ->counts('users')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('items_count')
                     ->label('Пунктов')
                     ->counts('items'),

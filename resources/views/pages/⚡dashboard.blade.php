@@ -130,7 +130,7 @@ new #[Title('Главная')] class extends Component {
                         @if ($this->upcomingChecklists->isNotEmpty())
                             Начните смену — появятся чек-листы: {{ $this->upcomingChecklists->pluck('name')->implode(', ') }}.
                         @else
-                            Отметьте начало работы — управляющий увидит, кто в смене.
+                            {{ auth()->user()->isManager() ? 'Отметьте, если вы сегодня работаете в кофейне.' : 'Отметьте начало работы — управляющий увидит, кто в смене.' }}
                         @endif
                     </div>
                 </div>
