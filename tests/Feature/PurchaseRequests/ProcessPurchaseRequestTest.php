@@ -11,6 +11,7 @@ use App\Notifications\PurchaseRequestCancelled;
 use App\Notifications\PurchaseRequestUpdated;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 function newRequest(object $k): PurchaseRequest
 {
@@ -71,7 +72,7 @@ test('request cannot be cancelled by someone else or after it was accepted', fun
     $request->updateByManager($k->manager, ['status' => RequestStatus::Accepted]);
 
     expect($request->refresh()->canBeCancelledBy($k->staff))->toBeFalse()
-        ->and(fn () => $request->cancelBy($k->staff))->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->and(fn () => $request->cancelBy($k->staff))->toThrow(HttpException::class);
 });
 
 test('staff sees requests of own cafe only', function () {
