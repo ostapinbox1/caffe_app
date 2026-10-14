@@ -14,6 +14,7 @@ use App\Notifications\ShiftEndedWithOpenChecklists;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * Кофейня с бариста и двумя чек-листами: утренний к 10:00 и закрытие до конца смены.
@@ -142,7 +143,7 @@ test('colleague cannot open or tick someone else\'s checklist, manager can only 
 
     $this->actingAs($k->manager)->get(route('checklists.show', $run))->assertOk()->assertSee('Анна Бариста');
     expect(fn () => $run->toggle($run->items->first()->id, $k->manager))
-        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
 });
 
 test('ending a shift with open checklists notifies managers', function () {
