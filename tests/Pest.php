@@ -1,5 +1,11 @@
 <?php
 
+use App\Enums\Unit;
+use App\Models\Cafe;
+use App\Models\CatalogCategory;
+use App\Models\CatalogItem;
+use App\Models\RequestSection;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +50,23 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Кофейня с разделом «Кухня», двумя позициями, сотрудником и управляющим.
+ *
+ * @return object{cafe: Cafe, section: RequestSection, flour: CatalogItem, milk: CatalogItem, staff: User, manager: User}
+ */
+function kitchen(): object
 {
-    // ..
+    $cafe = Cafe::factory()->create();
+    $section = RequestSection::factory()->create(['cafe_id' => $cafe->id, 'name' => 'Кухня']);
+    $category = CatalogCategory::factory()->create(['request_section_id' => $section->id, 'name' => 'Бакалея']);
+
+    return (object) [
+        'cafe' => $cafe,
+        'section' => $section,
+        'flour' => CatalogItem::factory()->create(['catalog_category_id' => $category->id, 'name' => 'Мука', 'unit' => Unit::Kilogram]),
+        'milk' => CatalogItem::factory()->create(['catalog_category_id' => $category->id, 'name' => 'Молоко', 'unit' => Unit::Liter]),
+        'staff' => User::factory()->create(['cafe_id' => $cafe->id, 'name' => 'Анна Бариста']),
+        'manager' => User::factory()->manager()->create(['cafe_id' => $cafe->id, 'name' => 'Володя Управляющий']),
+    ];
 }

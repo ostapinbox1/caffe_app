@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Enums\UserRole;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -13,12 +14,25 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static ?string $navigationLabel = 'Сотрудники';
+
+    protected static ?string $modelLabel = 'сотрудник';
+
+    protected static ?string $pluralModelLabel = 'сотрудники';
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {
@@ -30,11 +44,27 @@ class UserResource extends Resource
         return UsersTable::configure($table);
     }
 
-    public static function getRelations(): array
+    /**
+     * Только люди своей кофейни. У User нет общего фильтра по кофейне:
+     * он бы вызывал сам себя при загрузке вошедшего пользователя.
+     *
+     * @return Builder<User>
+     */
+    public static function getEloquentQuery(): Builder
     {
-        return [
-            //
-        ];
+        return parent::getEloquentQuery()->where('cafe_id', Auth::user()?->cafe_id);
+    }
+
+    // Людей не удаляем — отключаем доступ: на них ссылаются заявки.
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    // Управляющий не может сменить пароль или роль владельцу.
+    public static function canEdit(Model $record): bool
+    {
+        return ! ($record instanceof User && $record->role === UserRole::Owner && Auth::user()?->role !== UserRole::Owner);
     }
 
     public static function getPages(): array

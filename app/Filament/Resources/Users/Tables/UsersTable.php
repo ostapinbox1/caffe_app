@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class UsersTable
@@ -14,46 +13,33 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
-                TextColumn::make('email')
-                    ->label('Email address')
-                    ->searchable(),
-                TextColumn::make('email_verified_at')
-                    ->dateTime()
+                    ->label('Имя')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('two_factor_confirmed_at')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('cafe.name')
-                    ->searchable(),
-                TextColumn::make('role')
-                    ->badge()
-                    ->searchable(),
                 TextColumn::make('position')
+                    ->label('Должность')
+                    ->placeholder('—'),
+                TextColumn::make('role')
+                    ->label('Роль')
+                    ->badge()
+                    ->color('gray'),
+                TextColumn::make('email')
+                    ->label('Логин')
                     ->searchable(),
                 IconColumn::make('is_active')
+                    ->label('Доступ')
                     ->boolean(),
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_active')
+                    ->label('Доступ включён')
+                    ->default(true),
             ])
             ->recordActions([
                 EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

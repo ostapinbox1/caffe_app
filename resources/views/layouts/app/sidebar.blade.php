@@ -11,24 +11,35 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                    Главная
+                </flux:sidebar.item>
+                <flux:sidebar.item icon="plus-circle" :href="route('requests.create')" :current="request()->routeIs('requests.create')" wire:navigate>
+                    Новая заявка
+                </flux:sidebar.item>
+                <flux:sidebar.item icon="shopping-cart" :href="route('requests.index')" :current="request()->routeIs('requests.index', 'requests.show')" wire:navigate>
+                    Заявки
+                </flux:sidebar.item>
+                <flux:sidebar.item
+                    icon="bell"
+                    :href="route('notifications')"
+                    :current="request()->routeIs('notifications')"
+                    :badge="auth()->user()->unreadNotifications()->count() ?: null"
+                    wire:navigate
+                >
+                    Уведомления
+                </flux:sidebar.item>
             </flux:sidebar.nav>
 
             <flux:spacer />
 
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
+            @if (auth()->user()->isManager())
+                <flux:sidebar.nav>
+                    <flux:sidebar.item icon="cog-6-tooth" href="/admin">
+                        Управление
+                    </flux:sidebar.item>
+                </flux:sidebar.nav>
+            @endif
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>

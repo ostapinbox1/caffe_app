@@ -2,8 +2,12 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
-use Filament\Infolists\Components\IconEntry;
+use App\Models\PurchaseRequestEvent;
+use App\Models\PurchaseRequestItem;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 class PurchaseRequestInfolist
@@ -11,40 +15,56 @@ class PurchaseRequestInfolist
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(3)
             ->components([
-                TextEntry::make('cafe.name')
-                    ->label('Cafe'),
-                TextEntry::make('number')
-                    ->numeric(),
-                TextEntry::make('request_section_id')
-                    ->numeric(),
-                TextEntry::make('author.name')
-                    ->label('Author'),
-                TextEntry::make('status')
-                    ->badge(),
-                IconEntry::make('is_urgent')
-                    ->boolean(),
-                TextEntry::make('needed_by')
-                    ->date()
-                    ->placeholder('-'),
-                TextEntry::make('comment')
-                    ->placeholder('-')
-                    ->columnSpanFull(),
-                TextEntry::make('manager_comment')
-                    ->placeholder('-')
-                    ->columnSpanFull(),
-                TextEntry::make('expected_at')
-                    ->date()
-                    ->placeholder('-'),
-                TextEntry::make('status_changed_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('created_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->placeholder('-'),
+                Section::make('Заявка')
+                    ->columnSpan(2)
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('section.name')->label('Раздел'),
+                        TextEntry::make('status')->label('Статус')->badge(),
+                        TextEntry::make('author.name')->label('Автор'),
+                        TextEntry::make('created_at')->label('Создана')->dateTime('d.m.Y H:i'),
+                        TextEntry::make('needed_by')->label('Нужно к')->date('d.m.Y')->placeholder('—'),
+                        TextEntry::make('is_urgent')
+                            ->label('Срочно')
+                            ->formatStateUsing(fn (bool $state): string => $state ? 'Да' : 'Нет')
+                            ->color(fn (bool $state): ?string => $state ? 'danger' : null),
+                        TextEntry::make('comment')->label('Комментарий автора')->placeholder('—')->columnSpanFull(),
+                    ]),
+                Section::make('Ответ управляющего')
+                    ->columnSpan(1)
+                    ->schema([
+                        TextEntry::make('expected_at')->label('Ожидаемая дата поставки')->date('d.m.Y')->placeholder('—'),
+                        TextEntry::make('manager_comment')->label('Ответ для кофейни')->placeholder('—'),
+                    ]),
+                Section::make('Состав')
+                    ->columnSpan(2)
+                    ->schema([
+                        RepeatableEntry::make('items')
+                            ->hiddenLabel()
+                            ->table([
+                                TableColumn::make('Позиция'),
+                                TableColumn::make('Количество'),
+                            ])
+                            ->schema([
+                                TextEntry::make('name'),
+                                TextEntry::make('quantity')
+                                    ->state(fn (PurchaseRequestItem $record): string => $record->formattedQuantity().' '.$record->unit->getLabel()),
+                            ]),
+                    ]),
+                Section::make('История')
+                    ->columnSpan(1)
+                    ->schema([
+                        RepeatableEntry::make('events')
+                            ->hiddenLabel()
+                            ->schema([
+                                TextEntry::make('description')
+                                    ->hiddenLabel()
+                                    ->state(fn (PurchaseRequestEvent $record): string => $record->description())
+                                    ->helperText(fn (PurchaseRequestEvent $record): string => $record->created_at->format('d.m.Y H:i').' · '.($record->user?->name ?? '—')),
+                            ]),
+                    ]),
             ]);
     }
 }

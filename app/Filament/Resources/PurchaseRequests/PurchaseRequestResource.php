@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseRequests;
 
-use App\Filament\Resources\PurchaseRequests\Pages\CreatePurchaseRequest;
+use App\Enums\RequestStatus;
 use App\Filament\Resources\PurchaseRequests\Pages\EditPurchaseRequest;
 use App\Filament\Resources\PurchaseRequests\Pages\ListPurchaseRequests;
 use App\Filament\Resources\PurchaseRequests\Pages\ViewPurchaseRequest;
@@ -15,12 +15,27 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class PurchaseRequestResource extends Resource
 {
     protected static ?string $model = PurchaseRequest::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
+
+    protected static ?string $navigationLabel = 'Заявки';
+
+    protected static ?string $modelLabel = 'заявка';
+
+    protected static ?string $pluralModelLabel = 'заявки';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getRecordTitle(?Model $record): string
+    {
+        return $record instanceof PurchaseRequest ? $record->title() : 'Заявка';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -37,18 +52,44 @@ class PurchaseRequestResource extends Resource
         return PurchaseRequestsTable::configure($table);
     }
 
-    public static function getRelations(): array
+    /**
+     * @return Builder<PurchaseRequest>
+     */
+    public static function getEloquentQuery(): Builder
     {
-        return [
-            //
-        ];
+        return parent::getEloquentQuery()->with(['section', 'author', 'items']);
+    }
+
+    // Заявки подают сотрудники из кабинета; удалять нельзя — только отменять.
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    /**
+     * Сколько новых заявок ждут управляющего.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        $count = PurchaseRequest::query()->where('status', RequestStatus::New)->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'info';
     }
 
     public static function getPages(): array
     {
         return [
             'index' => ListPurchaseRequests::route('/'),
-            'create' => CreatePurchaseRequest::route('/create'),
             'view' => ViewPurchaseRequest::route('/{record}'),
             'edit' => EditPurchaseRequest::route('/{record}/edit'),
         ];
