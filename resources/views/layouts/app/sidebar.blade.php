@@ -18,7 +18,7 @@
     </head>
     <body class="min-h-screen bg-zinc-50 dark:bg-zinc-900">
         {{-- Компьютер: боковое меню --}}
-        <flux:sidebar sticky class="hidden border-e border-zinc-200 bg-white lg:flex dark:border-zinc-800 dark:bg-zinc-950">
+        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
             <a href="{{ route('dashboard') }}" wire:navigate class="flex flex-col gap-2 px-2 pt-1">
                 <x-brand-logo class="h-12" />
                 @if ($cafe)
