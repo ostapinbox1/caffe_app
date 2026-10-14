@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -58,7 +59,7 @@ class ChecklistTemplateResource extends Resource
                     ->schema([
                         TextInput::make('name')
                             ->label('Название')
-                            ->placeholder('Закрытие смены бариста')
+                            ->placeholder('например: Открытие смены бариста')
                             ->required()
                             ->maxLength(150)
                             ->columnSpanFull(),
@@ -119,7 +120,7 @@ class ChecklistTemplateResource extends Resource
                             ->schema([
                                 TextInput::make('title')
                                     ->label('Раздел')
-                                    ->placeholder('Оборудование')
+                                    ->placeholder('например: Оборудование')
                                     ->required()
                                     ->maxLength(150),
                                 Repeater::make('items')
@@ -129,16 +130,19 @@ class ChecklistTemplateResource extends Resource
                                     ->addActionLabel('Добавить пункт')
                                     ->defaultItems(1)
                                     ->minItems(1)
-                                    ->columns(2)
+                                    ->table([
+                                        TableColumn::make('Что сделать')->markAsRequired(),
+                                        TableColumn::make('Подсказка мелким шрифтом (необязательно)'),
+                                    ])
                                     ->schema([
                                         TextInput::make('text')
                                             ->label('Что сделать')
-                                            ->placeholder('Кофемашина выключена')
+                                            ->placeholder('например: Кофемашина выключена')
                                             ->required()
                                             ->maxLength(255),
                                         TextInput::make('hint')
-                                            ->label('Подсказка (необязательно)')
-                                            ->placeholder('Холодильник не отключать')
+                                            ->label('Подсказка')
+                                            ->placeholder('например: холодильник не отключать')
                                             ->maxLength(255),
                                     ]),
                             ]),

@@ -9,6 +9,11 @@ class CreateChecklistTemplate extends CreateRecord
 {
     protected static string $resource = ChecklistTemplateResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Новый чек-лист';
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

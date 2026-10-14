@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Log in')">
     <div class="flex flex-col gap-6">
-        <x-auth-header title="Вход" description="Логин и пароль выдаёт управляющий" />
+        <x-auth-header title="Вход" description="Логин и пароль выдаёт управляющий. Забыли пароль — тоже к нему." />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />

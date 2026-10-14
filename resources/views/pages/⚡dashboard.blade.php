@@ -94,7 +94,7 @@ new #[Title('Главная')] class extends Component {
     {{-- Смена --}}
     @if ($this->shift)
         @php($openRuns = $this->shift->checklistRuns->whereNull('completed_at')->count())
-        <x-card class="border-accent/40 bg-accent/5 dark:bg-accent/10">
+        <x-card class="border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <span class="relative flex size-3">

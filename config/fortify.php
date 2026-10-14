@@ -163,7 +163,8 @@ return [
     'features' => [
         // Регистрации нет: учётные записи заводит управляющий.
         // Features::registration(),
-        Features::resetPasswords(),
+        // Почта не настроена: пароль восстанавливает управляющий в настройках.
+        // Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
             'confirm' => true,

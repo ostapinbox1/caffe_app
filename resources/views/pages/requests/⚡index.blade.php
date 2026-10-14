@@ -89,12 +89,23 @@ new #[Title('Заявки')] class extends Component {
         <flux:switch wire:model.live="mine" label="Только мои" class="ms-auto" align="left" />
     </div>
 
+    {{-- Телефон: этапы с числами — нажмите, чтобы перелистнуть к колонке --}}
+    <div class="grid grid-cols-4 gap-1 md:hidden">
+        @foreach ($this->columns() as $status => $title)
+            @php($statusEnum = \App\Enums\RequestStatus::from($status))
+            <a href="#col-{{ $status }}" class="flex flex-col items-center rounded-lg bg-white py-1.5 text-xs shadow-xs dark:bg-zinc-800">
+                <span class="text-base font-semibold tabular-nums">{{ $this->board->get($status, collect())->count() }}</span>
+                <span class="text-zinc-500">{{ $title }}</span>
+            </a>
+        @endforeach
+    </div>
+
     {{-- Доска: на телефоне колонки листаются вбок --}}
-    <div class="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
+    <div class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
         @foreach ($this->columns() as $status => $title)
             @php($items = $this->board->get($status, collect()))
             @php($statusEnum = \App\Enums\RequestStatus::from($status))
-            <section class="flex w-[85%] shrink-0 snap-start flex-col gap-2 rounded-xl bg-zinc-100 p-2 md:w-auto dark:bg-zinc-800/60" wire:key="col-{{ $status }}">
+            <section id="col-{{ $status }}" class="flex w-[85%] shrink-0 snap-start flex-col gap-2 rounded-xl bg-zinc-100 p-2 md:w-auto dark:bg-zinc-800/60" wire:key="col-{{ $status }}">
                 <div class="flex items-center justify-between px-1 py-1">
                     <span class="flex items-center gap-2 text-sm font-semibold">
                         <flux:badge size="sm" :color="$statusEnum->badgeColor()">{{ $title }}</flux:badge>
@@ -102,7 +113,7 @@ new #[Title('Заявки')] class extends Component {
                     <span class="text-sm tabular-nums text-zinc-500">{{ $items->count() }}</span>
                 </div>
                 @forelse ($items as $request)
-                    <x-request-card :request="$request" wire:key="request-{{ $request->id }}" />
+                    <x-request-card :request="$request" :show-status="false" wire:key="request-{{ $request->id }}" />
                 @empty
                     <div class="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-400 dark:border-zinc-700">Пусто</div>
                 @endforelse

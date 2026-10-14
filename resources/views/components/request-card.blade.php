@@ -1,4 +1,4 @@
-@props(['request'])
+@props(['request', 'showStatus' => true])
 
 {{-- Карточка заявки: номер, раздел, статус (цветная полоса слева) и состав одной строкой. --}}
 @php($stripe = match ($request->status) {
@@ -17,7 +17,9 @@
                 <flux:badge size="sm" color="red" class="ms-1">срочно</flux:badge>
             @endif
         </div>
-        <flux:badge size="sm" :color="$request->status->badgeColor()">{{ $request->status->getLabel() }}</flux:badge>
+        @if ($showStatus)
+            <flux:badge size="sm" :color="$request->status->badgeColor()">{{ $request->status->getLabel() }}</flux:badge>
+        @endif
     </div>
     <div class="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{{ $request->summary() }}</div>
     <div class="mt-1 text-xs text-zinc-500">
