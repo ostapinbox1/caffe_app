@@ -41,6 +41,7 @@ class PurchaseRequestInfolist
                     ->columnSpan(2)
                     ->schema([
                         TextEntry::make('items')
+                            ->label('Состав')
                             ->hiddenLabel()
                             ->state(fn (PurchaseRequest $record): array => $record->items
                                 ->map(fn (PurchaseRequestItem $item): string => $item->label())
@@ -52,6 +53,7 @@ class PurchaseRequestInfolist
                     ->columnSpan(1)
                     ->schema([
                         TextEntry::make('events')
+                            ->label('История')
                             ->hiddenLabel()
                             ->state(fn (PurchaseRequest $record): array => $record->events
                                 ->map(fn (PurchaseRequestEvent $event): string => $event->created_at->format('d.m H:i').' — '.$event->description().' ('.($event->user?->shortName() ?? '—').')')
