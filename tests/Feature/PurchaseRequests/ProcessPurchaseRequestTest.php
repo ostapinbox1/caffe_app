@@ -87,7 +87,7 @@ test('staff pages render', function () {
     newRequest($k);
     $this->actingAs($k->staff);
 
-    $this->get(route('dashboard'))->assertOk()->assertSee('Мои открытые заявки')->assertSee('№1 · Кухня');
+    $this->get(route('dashboard'))->assertOk()->assertSee('Мои заявки')->assertSee('№1 · Кухня');
     $this->get(route('requests.index'))->assertOk()->assertSee('Мука 2 кг');
     $this->get(route('requests.index', ['mine' => 1]))->assertOk()->assertSee('Мука 2 кг');
     $this->get(route('requests.create'))->assertOk()->assertSee('Кухня');
