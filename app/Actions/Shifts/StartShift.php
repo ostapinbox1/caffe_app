@@ -2,6 +2,7 @@
 
 namespace App\Actions\Shifts;
 
+use App\Enums\ChecklistDeadline;
 use App\Models\ChecklistTemplate;
 use App\Models\ChecklistTemplateItem;
 use App\Models\ChecklistTemplateSection;
@@ -34,7 +35,10 @@ class StartShift
                 ->where('cafe_id', $user->cafe_id)
                 ->assignedTo($user)
                 ->with('sections.items')
+                // Сначала те, что к времени (утренние), потом «до закрытия смены».
                 ->orderBy('sort')
+                ->orderByRaw('case when deadline_type = ? then 0 else 1 end', [ChecklistDeadline::Time->value])
+                ->orderBy('due_time')
                 ->orderBy('name')
                 ->get();
 

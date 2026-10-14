@@ -28,6 +28,7 @@ new #[Title('Чек-лист')] class extends Component {
 
     public function complete(): void
     {
+        $this->resetErrorBag();
         $this->run->complete(Auth::user(), $this->comment);
         $this->reload();
 

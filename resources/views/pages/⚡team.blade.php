@@ -3,7 +3,8 @@
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\WorkShift;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -19,10 +20,10 @@ new #[Title('Смены')] class extends Component {
         $this->date = $this->day()->toDateString();
     }
 
-    public function day(): Carbon
+    public function day(): CarbonInterface
     {
         try {
-            return $this->date !== '' ? Carbon::parse($this->date)->startOfDay() : today();
+            return $this->date !== '' ? Date::parse($this->date)->startOfDay() : today();
         } catch (\Throwable) {
             return today();
         }
