@@ -144,5 +144,6 @@ test('hidden catalog items are not offered and cannot be added', function () {
         ->assertSee('Мука')
         ->assertDontSee('Старая позиция');
 
-    expect(fn () => $component->call('addItem', $hidden->id))->toThrow(Exception::class);
+    $component->call('addItem', $hidden->id)->assertStatus(404);
+    expect($component->get('lines'))->toBe([]);
 });

@@ -4,6 +4,7 @@ use App\Actions\PurchaseRequests\CreatePurchaseRequest;
 use App\Enums\RequestStatus;
 use App\Filament\Resources\PurchaseRequests\Pages\EditPurchaseRequest;
 use App\Filament\Resources\PurchaseRequests\Pages\ViewPurchaseRequest;
+use App\Filament\Widgets\RequestsOverview;
 use App\Models\PurchaseRequest;
 use App\Models\User;
 use App\Notifications\PurchaseRequestCancelled;
@@ -119,7 +120,8 @@ test('admin panel is for managers only', function () {
     $this->actingAs($k->staff)->get('/admin')->assertForbidden();
 
     $this->actingAs($k->manager);
-    $this->get('/admin')->assertOk()->assertSee('Новые заявки');
+    $this->get('/admin')->assertOk();
+    Livewire::test(RequestsOverview::class)->assertSee('Новые заявки');
     $this->get('/admin/purchase-requests')->assertOk()->assertSee('Мука 2 кг');
     $this->get("/admin/purchase-requests/{$request->id}")->assertOk()->assertSee('Анна Бариста');
     $this->get("/admin/purchase-requests/{$request->id}/edit")->assertOk();
