@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Cafe;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -11,15 +11,12 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Кофейня и справочник. Людей заводит команда `php artisan cafe:user`.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $cafe = Cafe::query()->firstOrCreate(['name' => 'Кофейня']);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(CatalogSeeder::class, parameters: ['cafe' => $cafe]);
     }
 }
