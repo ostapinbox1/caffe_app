@@ -53,10 +53,11 @@
         </flux:sidebar>
 
         {{-- Телефон: шапка --}}
-        <header class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 py-2 backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
+        <flux:header sticky class="z-20 border-b border-zinc-200 bg-white/95 backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
             <a href="{{ route('dashboard') }}" wire:navigate aria-label="Главная">
                 <x-brand-logo class="h-9" />
             </a>
+            <flux:spacer />
             <div class="flex items-center gap-1">
                 <a href="{{ route('notifications') }}" wire:navigate class="relative rounded-full p-2 text-zinc-600 dark:text-zinc-300" aria-label="Уведомления">
                     <flux:icon.bell class="size-6" />
@@ -66,7 +67,7 @@
                 </a>
                 <x-mobile-user-menu />
             </div>
-        </header>
+        </flux:header>
 
         <flux:main class="pb-28 lg:pb-8">
             {{ $slot }}
